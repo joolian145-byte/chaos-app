@@ -62,7 +62,8 @@ const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body { background: ${C.bg}; font-family: 'DM Sans', sans-serif; color: ${C.ink}; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
+body { background: ${C.bg}; font-family: 'DM Sans', sans-serif; color: ${C.ink}; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; overflow-x: hidden; width: 100%; }
+html { overflow-x: hidden; width: 100%; }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: ${C.pink}; border-radius: 99px; }
 
@@ -714,7 +715,7 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ minHeight:"100vh", background:C.bg }}>
+    <div style={{ minHeight:"100vh", background:C.bg, overflowX:"hidden", width:"100%" }}>
       <style>{GLOBAL_CSS}</style>
       <Confetti active={confetti} />
 
