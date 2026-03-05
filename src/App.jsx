@@ -43,7 +43,7 @@ const DEFAULT_QUESTIONS = [
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const nowDate = new Date();
-const CURRENT_MONTH = MONTHS[nowDate.getMonth()] + " " + nowDate.getFullYear();
+const AUTO_MONTH = MONTHS[nowDate.getMonth()] + " " + nowDate.getFullYear();
 
 // ─── Firebase helpers ─────────────────────────────────────────────────────────
 async function saveState(patch) {
@@ -75,6 +75,7 @@ function useStore() {
     submissions: {},
     editorNote: "",
     heroImage: null,
+    currentMonth: AUTO_MONTH,
   };
   const [state, setState] = useState(defaults);
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,7 @@ function HomeScreen({ state, onNavigate }) {
         <div style={{ position:"absolute",bottom:-30,left:20,width:100,height:100,borderRadius:"50%",background:C.yellow,opacity:.15,overflow:"hidden" }} />
         <span style={{ fontSize:36 }} className="float">💌</span>
         <p style={{ color:C.yellow,fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:13,letterSpacing:".08em",marginTop:8 }}>Monthly Inbox of Chaos</p>
-        <h1 style={{ color:"white",fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,lineHeight:1.1,marginTop:4 }}>{CURRENT_MONTH}</h1>
+        <h1 style={{ color:"white",fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,lineHeight:1.1,marginTop:4 }}>{state.currentMonth}</h1>
         <p style={{ color:"rgba(255,255,255,.6)",fontSize:14,marginTop:6 }}>{allDone?"🎉 Everyone's in! Newsletter is ready.":`Waiting for ${total-submitted} more submission${total-submitted!==1?"s":""}...`}</p>
         <div style={{ marginTop:20,display:"flex",alignItems:"center",gap:14 }}>
           <div style={{ textAlign:"center",minWidth:52 }}>
@@ -261,7 +262,7 @@ function SubmitScreen({ state, update, onBack }) {
     <div style={{ maxWidth:480,margin:"0 auto",padding:"max(80px,env(safe-area-inset-top)) 24px max(40px,env(safe-area-inset-bottom))",textAlign:"center",minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center" }}>
       <div style={{ fontSize:80 }} className="float">🎉</div>
       <h2 style={{ fontFamily:"'Playfair Display',serif",fontSize:32,margin:"16px 0 10px" }}>You're in, {who.name}!</h2>
-      <p style={{ color:C.muted,lineHeight:1.7,marginBottom:32 }}>Your responses are saved for {CURRENT_MONTH}.<br/>The newsletter drops when everyone submits!</p>
+      <p style={{ color:C.muted,lineHeight:1.7,marginBottom:32 }}>Your responses are saved for {state.currentMonth}.<br/>The newsletter drops when everyone submits!</p>
       <button className="btn" onClick={onBack} style={{ padding:"16px 40px",fontSize:16,background:`linear-gradient(135deg,${C.pink},${C.orange})`,color:"white" }}>Back to Home</button>
     </div>
   );
@@ -323,7 +324,7 @@ function SubmitScreen({ state, update, onBack }) {
 function NewsletterScreen({ state, update, onBack, isArchive=false, archiveData=null }) {
   const data = isArchive?archiveData:state;
   const { friends, questions, submissions, editorNote, heroImage } = data;
-  const month = isArchive?archiveData.month:CURRENT_MONTH;
+  const month = isArchive?archiveData.month:state.currentMonth;
   const [summaries, setSummaries] = useState({});
   const [loadingQ, setLoadingQ] = useState(null);
   const [generating, setGenerating] = useState(false);
@@ -380,6 +381,7 @@ function NewsletterScreen({ state, update, onBack, isArchive=false, archiveData=
           return (
             <div key={q.id} style={{ marginBottom:36,paddingBottom:32,borderBottom:"1px solid #EEE" }}>
               <h2 style={{ fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,marginBottom:8 }}>{q.label}</h2>
+              <p style={{ fontSize:14,color:C.muted,fontStyle:"italic",marginBottom:10 }}>{q.prompt}</p>
               <div style={{ display:"flex",alignItems:"flex-start",gap:10,marginBottom:14,minHeight:30 }}>
                 {loadingQ===q.id?<div style={{ display:"flex",alignItems:"center",gap:8,color:C.muted,fontSize:14 }}><Spinner/><span>Writing summary…</span></div>
                   :summaries[q.id]?<p style={{ fontFamily:"'Playfair Display',serif",fontStyle:"italic",color:"#5A3E8A",fontSize:15,lineHeight:1.7,flex:1 }}>{summaries[q.id]}</p>
@@ -415,9 +417,9 @@ function NewsletterScreen({ state, update, onBack, isArchive=false, archiveData=
           <div style={{ background:C.yellow,color:C.ink,display:"inline-block",borderRadius:6,padding:"4px 14px",marginTop:10,fontSize:13,fontWeight:700 }}>friendship, matcha, and just a tiny bit of automation 💻☕</div>
         </div>
         {!isArchive&&<button className="btn" onClick={async()=>{
-          const entry = { month:CURRENT_MONTH,friends:[...state.friends],questions:[...state.questions],submissions:{...state.submissions},editorNote:state.editorNote,heroImage:state.heroImage };
+          const entry = { month:state.currentMonth,friends:[...state.friends],questions:[...state.questions],submissions:{...state.submissions},editorNote:state.editorNote,heroImage:state.heroImage };
           await saveArchive(entry);
-          await update({ submissions:{},friends:state.friends.map(f=>({...f,submitted:false})),editorNote:"",heroImage:null });
+          await update({ submissions:{},friends:state.friends.map(f=>({...f,submitted:false})),editorNote:"",heroImage:null,currentMonth:AUTO_MONTH });
           onBack();
         }} style={{ width:"100%",marginTop:24,padding:"16px",fontSize:15,background:C.mint,color:C.ink }}>
           ✅ Archive This Month & Start Fresh
@@ -488,7 +490,15 @@ function AdminScreen({ state, update, onBack }) {
       </div>
       {tab==="editor"&&<div>
         <div style={{ marginBottom:20 }}>
-          <label>Editor's Note</label>
+          <label>📅 Current Newsletter Month</label>
+          <p style={{ fontSize:13,color:C.muted,marginBottom:8 }}>Set which month this newsletter is for</p>
+          <select value={state.currentMonth||AUTO_MONTH} onChange={e=>update({currentMonth:e.target.value})}
+            style={{ width:"100%",padding:"14px 16px",borderRadius:14,border:"2px solid #EEE",fontSize:16,background:"white",color:C.ink }}>
+            {[2025,2026,2027].flatMap(y=>MONTHS.map(m=>`${m} ${y}`)).map(opt=>(
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
           <p style={{ fontSize:13,color:C.muted,marginBottom:8 }}>Appears at the top of the newsletter in italic</p>
           <textarea rows={6} placeholder="Welcome back, friends!..." value={editorNote||""} onChange={e=>update({editorNote:e.target.value})} />
         </div>
