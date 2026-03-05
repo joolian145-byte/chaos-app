@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs } from "firebase/firestore";
+import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, deleteDoc } from "firebase/firestore";
 
 // ─── Firebase config ──────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -54,6 +54,10 @@ async function saveArchive(entry) {
   try { await setDoc(doc(db,"archive",entry.month.replace(/\s/g,"_")), entry); }
   catch(e) { console.error("Archive error:",e); }
 }
+async function deleteArchiveEntry(month) {
+  try { await deleteDoc(doc(db,"archive",month.replace(/\s/g,"_"))); }
+  catch(e) { console.error("Delete error:",e); }
+}
 async function loadArchive() {
   try {
     const snap = await getDocs(collection(db,"archive"));
@@ -99,8 +103,8 @@ function useStore() {
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;overflow-x:hidden;width:100%;}
-body{background:${C.bg};font-family:'DM Sans',sans-serif;color:${C.ink};-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;overflow-x:hidden;width:100%;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;overflow-x:hidden;width:100%;max-width:100%;}
+body{background:${C.bg};font-family:'DM Sans',sans-serif;color:${C.ink};-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;overflow-x:hidden;width:100%;max-width:100%;position:relative;}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-thumb{background:${C.pink};border-radius:99px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -457,7 +461,19 @@ function AdminScreen({ state, update, onBack }) {
   const [newQ, setNewQ] = useState({ emoji:"💬",label:"",prompt:"",placeholder:"" });
   const [tab, setTab] = useState("editor");
   const [saving, setSaving] = useState(false);
-  const tabStyle = (t) => ({ flex:1,padding:"10px",border:"none",cursor:"pointer",borderRadius:10,fontWeight:700,fontSize:13,background:tab===t?C.ink:"transparent",color:tab===t?"white":C.muted,transition:"all .2s",minHeight:44 });
+  const [archive, setArchive] = useState([]);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+
+  const loadAdminArchive = async () => {
+    setArchiveLoading(true);
+    const items = await loadArchive();
+    setArchive(items);
+    setArchiveLoading(false);
+  };
+
+  useEffect(() => { if (tab==="archive") loadAdminArchive(); }, [tab]);
+
+  const tabStyle = (t) => ({ flex:1,padding:"10px",border:"none",cursor:"pointer",borderRadius:10,fontWeight:700,fontSize:12,background:tab===t?C.ink:"transparent",color:tab===t?"white":C.muted,transition:"all .2s",minHeight:44 });
   const save = async (patch) => { setSaving(true); await update(patch); setSaving(false); };
   return (
     <div style={{ maxWidth:480,margin:"0 auto",padding:"24px 16px 80px" }}>
@@ -468,6 +484,7 @@ function AdminScreen({ state, update, onBack }) {
         <button style={tabStyle("editor")} onClick={()=>setTab("editor")}>✏️ Editor</button>
         <button style={tabStyle("questions")} onClick={()=>setTab("questions")}>❓ Q's</button>
         <button style={tabStyle("members")} onClick={()=>setTab("members")}>👥 Members</button>
+        <button style={tabStyle("archive")} onClick={()=>setTab("archive")}>📚 Archive</button>
       </div>
       {tab==="editor"&&<div>
         <div style={{ marginBottom:20 }}>
@@ -497,6 +514,30 @@ function AdminScreen({ state, update, onBack }) {
           <div style={{ marginBottom:14 }}><label>Placeholder Text</label><input placeholder="e.g. Don't say cereal..." value={newQ.placeholder} onChange={e=>setNewQ(q=>({...q,placeholder:e.target.value}))} /></div>
           <button className="btn" onClick={()=>{ if(!newQ.label.trim())return; save({questions:[...questions,{...newQ,id:"q_"+Date.now()}]}); setNewQ({emoji:"💬",label:"",prompt:"",placeholder:""}); }} style={{ width:"100%",padding:"13px",fontSize:14,background:C.mint,color:C.ink }}>Add Question</button>
         </div>
+      </div>}
+      {tab==="archive"&&<div>
+        <p style={{ color:C.muted,fontSize:14,marginBottom:16 }}>Delete old newsletters from the archive.</p>
+        {archiveLoading?<div style={{ textAlign:"center",padding:"40px 0" }}><Spinner/></div>
+          :archive.length===0?<div style={{ textAlign:"center",padding:"40px 0",color:C.muted }}>
+            <div style={{ fontSize:40,marginBottom:10 }}>🌚</div>
+            <p>No archived newsletters yet.</p>
+          </div>
+          :archive.map((entry,i)=>(
+            <div key={i} style={{ background:C.card,borderRadius:16,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 8px rgba(0,0,0,.05)",border:"2px solid #EEE" }}>
+              <div style={{ fontSize:24 }}>🗞️</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:16 }}>{entry.month}</div>
+                <div style={{ fontSize:12,color:C.muted }}>{entry.friends?.length} contributors</div>
+              </div>
+              <button onClick={async()=>{
+                if (window.confirm(`Delete "${entry.month}" from archive? This cannot be undone.`)) {
+                  await deleteArchiveEntry(entry.month);
+                  setArchive(a=>a.filter(e=>e.month!==entry.month));
+                }
+              }} style={{ background:"#FF444422",color:"#FF4444",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontWeight:700,fontSize:12 }}>🗑️ Delete</button>
+            </div>
+          ))
+        }
       </div>}
       {tab==="members"&&<div>
         {friends.map(f=>(
@@ -582,7 +623,7 @@ export default function App() {
   if (loading) return <><style>{GLOBAL_CSS}</style><LoadingScreen/></>;
 
   return (
-    <div style={{ minHeight:"100vh",background:C.bg,overflowX:"hidden",width:"100%" }}>
+    <div style={{ minHeight:"100vh",background:C.bg,overflowX:"hidden",width:"100%",maxWidth:"100%",position:"relative" }}>
       <style>{GLOBAL_CSS}</style>
       <Confetti active={confetti}/>
       {screen==="home"       &&<HomeScreen state={state} onNavigate={nav}/>}
