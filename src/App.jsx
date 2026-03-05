@@ -189,10 +189,10 @@ function HomeScreen({ state, onNavigate }) {
   const allDone = submitted===total&&total>0;
   const pct = total?(submitted/total)*100:0;
   return (
-    <div style={{ maxWidth:480,margin:"0 auto",paddingBottom:40 }}>
-      <div style={{ background:C.ink,padding:"max(40px,env(safe-area-inset-top)) 24px 32px",position:"relative",overflow:"hidden" }}>
-        <div style={{ position:"absolute",top:-50,right:-50,width:180,height:180,borderRadius:"50%",background:C.pink,opacity:.12 }} />
-        <div style={{ position:"absolute",bottom:-30,left:20,width:100,height:100,borderRadius:"50%",background:C.yellow,opacity:.15 }} />
+    <div style={{ maxWidth:480,margin:"0 auto",paddingBottom:40,width:"100%",overflowX:"hidden" }}>
+      <div style={{ background:C.ink,padding:"max(40px,env(safe-area-inset-top)) 24px 32px",position:"relative",overflow:"hidden",width:"100%" }}>
+        <div style={{ position:"absolute",top:-50,right:-50,width:180,height:180,borderRadius:"50%",background:C.pink,opacity:.12,overflow:"hidden" }} />
+        <div style={{ position:"absolute",bottom:-30,left:20,width:100,height:100,borderRadius:"50%",background:C.yellow,opacity:.15,overflow:"hidden" }} />
         <span style={{ fontSize:36 }} className="float">💌</span>
         <p style={{ color:C.yellow,fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:13,letterSpacing:".08em",marginTop:8 }}>Monthly Inbox of Chaos</p>
         <h1 style={{ color:"white",fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:900,lineHeight:1.1,marginTop:4 }}>{CURRENT_MONTH}</h1>
