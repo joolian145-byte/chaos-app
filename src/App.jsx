@@ -499,6 +499,8 @@ function AdminScreen({ state, update, onBack }) {
             ))}
           </select>
         </div>
+        <div style={{ marginBottom:20 }}>
+          <label>Editor's Note</label>
           <p style={{ fontSize:13,color:C.muted,marginBottom:8 }}>Appears at the top of the newsletter in italic</p>
           <textarea rows={6} placeholder="Welcome back, friends!..." value={editorNote||""} onChange={e=>update({editorNote:e.target.value})} />
         </div>
